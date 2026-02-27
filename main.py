@@ -66,6 +66,51 @@ def cmd_history(args):
         print(f"  [{ts}] {text}... | ❤ {likes}  💬 {replies}")
 
 
+def cmd_analyze(args):
+    from src.threads_client import ThreadsClient
+    from src.analytics import AnalyticsManager
+    client = ThreadsClient()
+    analytics = AnalyticsManager(client)
+    analytics.collect_and_save()
+    analytics.print_report()
+
+    followers = client.get_follower_count()
+    if followers:
+        print(f"\n  フォロワー数  : {followers} 人")
+
+
+def cmd_growth(args):
+    """分析 → AI最適化投稿 の成長サイクルを1回実行"""
+    from src.threads_client import ThreadsClient
+    from src.ai_generator import AIContentGenerator
+    from src.analytics import AnalyticsManager
+
+    client = ThreadsClient()
+    analytics = AnalyticsManager(client)
+    generator = AIContentGenerator()
+
+    print("[Growth] 投稿データを分析中...")
+    posts = analytics.collect_and_save()
+    analytics.print_report()
+
+    hint = analytics.get_best_posts_hint(posts)
+    topic = args.topic if hasattr(args, "topic") and args.topic else None
+
+    print("\n[Growth] 分析結果をもとに投稿文を最適化生成中...")
+    text = generator.generate_optimized_post(topic=topic, best_posts_hint=hint)
+
+    print("\n--- 生成された投稿文 ---")
+    print(text)
+    print(f"--- {len(text)}文字 ---\n")
+
+    confirm = input("この内容で投稿しますか？ [y/N]: ").strip().lower()
+    if confirm == "y":
+        client.post(text)
+        print("[Growth] 投稿しました！フォロワー増加を目指して継続しましょう。")
+    else:
+        print("キャンセルしました。")
+
+
 def main():
     parser = argparse.ArgumentParser(description="Threads SNS 自動管理システム")
     subparsers = parser.add_subparsers(dest="command")
@@ -83,6 +128,13 @@ def main():
     # history
     subparsers.add_parser("history", help="最近の投稿一覧")
 
+    # analyze
+    subparsers.add_parser("analyze", help="投稿のエンゲージメント分析レポートを表示")
+
+    # growth
+    growth_parser = subparsers.add_parser("growth", help="分析→AI最適化投稿の成長サイクルを実行")
+    growth_parser.add_argument("--topic", help="投稿テーマを指定")
+
     args = parser.parse_args()
 
     if args.command == "post":
@@ -93,6 +145,10 @@ def main():
         cmd_profile(args)
     elif args.command == "history":
         cmd_history(args)
+    elif args.command == "analyze":
+        cmd_analyze(args)
+    elif args.command == "growth":
+        cmd_growth(args)
     else:
         parser.print_help()
         sys.exit(1)

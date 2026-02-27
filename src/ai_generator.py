@@ -47,6 +47,47 @@ class AIContentGenerator:
         print(f"[AI] テーマ「{topic}」で生成 ({len(text)}文字)")
         return text
 
+    def generate_optimized_post(self, topic: str = None, best_posts_hint: str = "") -> str:
+        """過去の高パフォーマンス投稿を参考にした最適化投稿文を生成"""
+        topic = topic or self._pick_topic()
+
+        if self.language == "ja":
+            lang_instruction = "日本語で"
+            style_hint = "読者が思わず「いいね」や返信をしたくなるような、自然な口語体で書いてください。"
+        else:
+            lang_instruction = f"in {self.language}"
+            style_hint = "Write in a natural, conversational tone that strongly encourages engagement."
+
+        hint_section = ""
+        if best_posts_hint:
+            hint_section = (
+                f"\n参考: 以下は過去のエンゲージメント上位投稿です。"
+                f"これらのトーンやスタイルを参考にしてください:\n{best_posts_hint}\n"
+            )
+
+        prompt = (
+            f"Threadsに投稿する文章を{lang_instruction}1件だけ生成してください。\n"
+            f"テーマ: {topic}\n"
+            f"文字数: {self.MAX_THREADS_LENGTH}文字以内\n"
+            f"{hint_section}"
+            f"条件:\n"
+            f"- 挨拶文や前置きは不要\n"
+            f"- ハッシュタグは2〜4個\n"
+            f"- フォロワーを増やすために、共感・質問・共有を促す内容にする\n"
+            f"- {style_hint}\n"
+            f"- 投稿文のみを出力し、余分な説明は一切不要"
+        )
+
+        message = self.client.messages.create(
+            model="claude-sonnet-4-6",
+            max_tokens=512,
+            messages=[{"role": "user", "content": prompt}],
+        )
+
+        text = message.content[0].text.strip()
+        print(f"[AI] テーマ「{topic}」で最適化生成 ({len(text)}文字)")
+        return text
+
     def generate_reply(self, original_text: str) -> str:
         """既存の投稿に対する返信文を生成"""
         prompt = (

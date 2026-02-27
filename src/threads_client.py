@@ -56,3 +56,24 @@ class ThreadsClient:
             "limit": limit,
         })
         return result.get("data", [])
+
+    def get_post_insights(self, thread_id: str) -> dict:
+        """投稿ごとのインサイト（表示数・いいね・返信・リポスト）を取得"""
+        try:
+            result = self._get(f"{thread_id}/insights", {
+                "metric": "views,likes,replies,reposts,quotes",
+            })
+            metrics = {}
+            for item in result.get("data", []):
+                metrics[item["name"]] = item.get("values", [{}])[-1].get("value", 0)
+            return metrics
+        except Exception:
+            return {}
+
+    def get_follower_count(self) -> int:
+        """フォロワー数を取得"""
+        try:
+            result = self._get(self.user_id, {"fields": "followers_count"})
+            return result.get("followers_count", 0)
+        except Exception:
+            return 0
