@@ -79,6 +79,15 @@ def cmd_analyze(args):
         print(f"\n  フォロワー数  : {followers} 人")
 
 
+def cmd_webhook(args):
+    """Webhookサーバーを起動する"""
+    from src.webhook_server import run
+    port = int(args.port) if hasattr(args, "port") and args.port else 5000
+    print(f"[Webhook] サーバーを起動します: http://0.0.0.0:{port}/webhook")
+    print("[Webhook] 停止するには Ctrl+C を押してください")
+    run(port=port)
+
+
 def cmd_growth(args):
     """分析 → AI最適化投稿 の成長サイクルを1回実行"""
     from src.threads_client import ThreadsClient
@@ -135,6 +144,10 @@ def main():
     growth_parser = subparsers.add_parser("growth", help="分析→AI最適化投稿の成長サイクルを実行")
     growth_parser.add_argument("--topic", help="投稿テーマを指定")
 
+    # webhook
+    webhook_parser = subparsers.add_parser("webhook", help="Webhookサーバーを起動")
+    webhook_parser.add_argument("--port", default=5000, help="ポート番号（デフォルト: 5000）")
+
     args = parser.parse_args()
 
     if args.command == "post":
@@ -149,6 +162,8 @@ def main():
         cmd_analyze(args)
     elif args.command == "growth":
         cmd_growth(args)
+    elif args.command == "webhook":
+        cmd_webhook(args)
     else:
         parser.print_help()
         sys.exit(1)
