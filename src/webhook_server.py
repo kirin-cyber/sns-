@@ -6,9 +6,12 @@ import os
 
 from flask import Flask, abort, jsonify, request
 
+from src.discord_notifier import DiscordNotifier
+
 app = Flask(__name__)
 logging.basicConfig(level=logging.INFO, format="%(asctime)s %(levelname)s %(message)s")
 logger = logging.getLogger(__name__)
+notifier = DiscordNotifier()
 
 
 def _verify_signature(payload: bytes, signature: str) -> bool:
@@ -74,14 +77,17 @@ def _handle_event(object_type: str, field: str, value: dict):
 
 def _on_mention(value: dict):
     logger.info("[Mention] %s", value)
+    notifier.on_mention(value)
 
 
 def _on_reply(value: dict):
     logger.info("[Reply] %s", value)
+    notifier.on_reply(value)
 
 
 def _on_follow(value: dict):
     logger.info("[Follow] %s", value)
+    notifier.on_follow(value)
 
 
 def run(host: str = "0.0.0.0", port: int = 5000, debug: bool = False):
