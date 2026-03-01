@@ -18,15 +18,20 @@ load_dotenv()
 
 def cmd_post(args):
     from src.threads_client import ThreadsClient
-    from src.ai_generator import AIContentGenerator
 
-    generator = AIContentGenerator()
     client = ThreadsClient()
 
-    topic = args.topic if hasattr(args, "topic") and args.topic else None
-    text = generator.generate_post(topic)
+    fixed_text = args.text if hasattr(args, "text") and args.text else None
 
-    print("\n--- 生成された投稿文 ---")
+    if fixed_text:
+        text = fixed_text
+    else:
+        from src.ai_generator import AIContentGenerator
+        generator = AIContentGenerator()
+        topic = args.topic if hasattr(args, "topic") and args.topic else None
+        text = generator.generate_post(topic)
+
+    print("\n--- 投稿文 ---")
     print(text)
     print(f"--- {len(text)}文字 ---\n")
 
@@ -126,7 +131,8 @@ def main():
 
     # post
     post_parser = subparsers.add_parser("post", help="今すぐ1回投稿")
-    post_parser.add_argument("--topic", help="投稿テーマを指定")
+    post_parser.add_argument("--topic", help="投稿テーマを指定（AI生成時）")
+    post_parser.add_argument("--text", help="固定テキストで投稿（ANTHROPIC_API_KEY不要）")
 
     # schedule
     subparsers.add_parser("schedule", help="定期投稿モード開始")
